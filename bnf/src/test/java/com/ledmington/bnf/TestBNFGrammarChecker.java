@@ -1,5 +1,5 @@
 /*
- * parser-gen - Parser Generator
+ * japg - Just a Parser Generator
  * Copyright (C) 2025-2026 Filippo Barbari <filippo.barbari@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify

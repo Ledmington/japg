@@ -1,5 +1,5 @@
 /*
- * parser-gen - Parser Generator
+ * japg - Just a Parser Generator
  * Copyright (C) 2025-2026 Filippo Barbari <filippo.barbari@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -68,7 +68,7 @@ public final class TestParser {
 			Arguments.of(
 					"S=(\"a\" | \"b\") (\"a\" | \"b\" | \"c\")*;",
 					g(p("S", seq(or(t("a"), t("b")), zero_or_more(or(t("a"), t("b"), t("c"))))))),
-			// Fix issue 30 (https://github.com/Ledmington/parser_generator/issues/30)
+			// Fix issue 30 (https://github.com/Ledmington/japg/issues/30)
 			Arguments.of(
 					String.join(
 							"\n",
