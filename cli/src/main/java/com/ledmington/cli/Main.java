@@ -1,5 +1,5 @@
 /*
- * parser-gen - Parser Generator
+ * japg - Just a Parser Generator
  * Copyright (C) 2025-2026 Filippo Barbari <filippo.barbari@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ public class Main {
 					System.out.println(String.join(
 							"\n",
 							"",
-							" Parser Generator - A zero-dependency parser generator",
+							" japg - A zero-dependency parser generator",
 							"",
 							" -h, --help             Displays this message and exits.",
 							" -v, --verbose          Displays useful information while parsing the grammar.",

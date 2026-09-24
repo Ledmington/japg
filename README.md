@@ -1,14 +1,15 @@
-# A zero-dependency EBNF parser generator
+# japg - Just a Parser Generator
+A zero-dependency EBNF parser generator.
 
 ## How to use
-First make sure the parser generator is built:
+You can download a pre-built fat-jar from [GitHub releases](https://github.com/Ledmington/japg/releases) or you can build it yourself with:
 ```bash
 ./gradlew fatjar
 ```
 
 Then, make it generate the parser from your EBNF grammar file:
 ```bash
-java -jar cli/build/libs/parser-gen-cli-0.1.0.jar -g <your_grammar_file> -o your/package/MyParser
+java -jar japg-cli-0.1.0.jar -g <your_grammar_file> -o your/package/MyParser
 ```
 This will create a java file called `MyParser.java` inside the existing `your/package` directory.
 
