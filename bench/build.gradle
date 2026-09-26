@@ -11,10 +11,10 @@ static def getDate() {
     return new Date().format('yyyyMMddHHmmss')
 }
 
-String fatJarBaseName = "${appNameLowerCase}-benchmark"
+String fatJarBaseName = "${rootProject.appNameLowerCase}-benchmark"
 String fatJarName = "${fatJarBaseName}.jar"
 String fatJarPath = path("${project.layout.buildDirectory.get().toString()}", "libs", "${fatJarName}")
-String mainClassName = "${basePackage}.bench.Main"
+String mainClassName = "${rootProject.basePackage}.bench.Main"
 
 dependencies {
     implementation project(':ebnf')
@@ -41,7 +41,6 @@ tasks.register('fatJar', Jar) {
     }
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     manifest {
-        archiveBaseName = appNameLowerCase
         attributes(
                 "Main-Class": "$mainClassName"
         )
@@ -63,9 +62,9 @@ if (System.getProperty("os.name").toLowerCase().contains("windows")) {
     println("Sorry, no support for async-profiler on Windows at the moment. The tasks 'downloadAsyncProfiler', 'asyncProfiler' and 'flamegraph' will not be generated.")
     println("Check this for news: https://github.com/async-profiler/async-profiler/issues/188")
 } else {
-    tasks.register('downloadAsyncProfiler', Download) {
-        group 'utilities'
-        description 'Downloads async-profiler'
+    tasks.register('downloadAsyncProfiler', de.undercouch.gradle.tasks.download.Download) {
+        group = 'utilities'
+        description = 'Downloads async-profiler'
         src "https://github.com/async-profiler/async-profiler/releases/download/v${asyncProfilerVersion}/async-profiler-${asyncProfilerVersion}-linux-x64.tar.gz"
         dest new File("${project.layout.buildDirectory.get().toString()}", "async-profiler.tar.gz")
         overwrite false
@@ -73,11 +72,11 @@ if (System.getProperty("os.name").toLowerCase().contains("windows")) {
 
     tasks.register('asyncProfiler', Copy) {
         dependsOn downloadAsyncProfiler
-        group 'utilities'
-        description 'Prepares async-profiler into the build directory'
+        group = 'utilities'
+        description = 'Prepares async-profiler into the build directory'
         from tarTree(downloadAsyncProfiler.dest)
         into path("${project.layout.buildDirectory.get().toString()}", "async-profiler")
-        includeEmptyDirs(false)
+        includeEmptyDirs = false
         ext {
             profiler = path("${project.layout.buildDirectory.get().toString()}", "async-profiler", "async-profiler-${asyncProfilerVersion}-linux-x64", "build", "libasyncProfiler.so")
         }
@@ -85,8 +84,8 @@ if (System.getProperty("os.name").toLowerCase().contains("windows")) {
 
     tasks.register('flamegraph', JavaExec) {
         dependsOn([asyncProfiler, fatJar])
-        group 'utilities'
-        description 'Runs the app with async-profiler attached and generates a flamegraph'
+        group = 'utilities'
+        description = 'Runs the app with async-profiler attached and generates a flamegraph'
         String flamegraphFile = path("${project.layout.buildDirectory.get().toString()}", "flamegraphs", "flamegraph-cpu-${getDate()}.html")
         doFirst {
             mkdir path("${project.layout.buildDirectory.get().toString()}", "flamegraphs")
