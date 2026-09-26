@@ -55,7 +55,7 @@ public final class TextIterator {
 	 * @return The current character.
 	 */
 	public char current() {
-		return arr[characterPosition];
+		return hasNext() ? arr[characterPosition] : CharacterIterator.DONE;
 	}
 
 	/**
