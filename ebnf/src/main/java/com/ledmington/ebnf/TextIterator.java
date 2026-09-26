@@ -17,23 +17,100 @@
  */
 package com.ledmington.ebnf;
 
+import java.text.CharacterIterator;
 import java.util.Arrays;
 
+/** An iterator over the characters of a text which keeps track of the current line and column. */
 public final class TextIterator {
 
 	private final char[] arr;
-	private int pos = 0;
 
+	// Position of the current character from the beginning of the file
+	private int characterPosition = 0;
+
+	private int line = 1; // The first line is number 1 by convention
+	private int column = 1; // The first column is number 1 by convention
+
+	/**
+	 * Creates a new TextIterator pointing to the first character of the given String.
+	 *
+	 * @param s The text to iterate over.
+	 */
 	public TextIterator(final String s) {
 		this.arr = s.toCharArray();
+	}
+
+	/**
+	 * Checks whether the iterator still points to a valid character.
+	 *
+	 * @return True if there is a current character, false if the end of the text has been reached.
+	 */
+	public boolean hasNext() {
+		return characterPosition < arr.length;
+	}
+
+	/**
+	 * Returns the character the iterator currently points to.
+	 *
+	 * @return The current character.
+	 */
+	public char current() {
+		return arr[characterPosition];
+	}
+
+	/**
+	 * Returns the character after the current one, without moving the iterator.
+	 *
+	 * @return The next character, or {@link CharacterIterator#DONE} if there is none.
+	 */
+	public char peekNext() {
+		return characterPosition + 1 < arr.length ? arr[characterPosition + 1] : CharacterIterator.DONE;
+	}
+
+	/** Moves the iterator to the next character, updating the line and column accordingly. */
+	@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+	public void move() {
+		if (arr[characterPosition] == '\n') {
+			line++;
+			column = 1;
+		} else {
+			column++;
+		}
+		characterPosition++;
+	}
+
+	/**
+	 * Returns the line of the current character.
+	 *
+	 * @return The line of the current character, starting from 1.
+	 */
+	public int getLine() {
+		return line;
+	}
+
+	/**
+	 * Returns the column of the current character.
+	 *
+	 * @return The column of the current character, starting from 1.
+	 */
+	public int getColumn() {
+		return column;
 	}
 
 	@Override
 	public int hashCode() {
 		int h = 17;
 		h = 31 * h + Arrays.hashCode(arr);
-		h = 31 * h + pos;
+		h = 31 * h + characterPosition;
+		h = 31 * h + line;
+		h = 31 * h + column;
 		return h;
+	}
+
+	@Override
+	public String toString() {
+		return "TextIterator(content='" + Arrays.toString(arr) + "'; pos=" + characterPosition + "; line=" + line
+				+ "; column=" + column + ")";
 	}
 
 	@Override
@@ -47,6 +124,9 @@ public final class TextIterator {
 		if (!(other instanceof TextIterator it)) {
 			return false;
 		}
-		return this.pos == it.pos && Arrays.equals(this.arr, it.arr);
+		return this.characterPosition == it.characterPosition
+				&& Arrays.equals(this.arr, it.arr)
+				&& this.line == it.line
+				&& this.column == it.column;
 	}
 }

@@ -40,7 +40,7 @@ public final class Parser {
 	public static Grammar parse(final String input) {
 		try {
 			final TextIterator it = new TextIterator(input);
-			final String stripped = removeComments(input);
+			final String stripped = removeComments(it);
 			final List<Token> tokens = tokenize(stripped);
 			return parse(tokens);
 		} catch (final IndexOutOfBoundsException ioobe) {
@@ -49,22 +49,21 @@ public final class Parser {
 	}
 
 	@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-	private static String removeComments(final String input) {
-		final StringBuilder sb = new StringBuilder(input.length());
-		final int n = input.length();
+	private static String removeComments(final TextIterator it) {
+		final StringBuilder sb = new StringBuilder();
 
 		boolean inBlockComment = false;
 		boolean inLineComment = false;
 		boolean inString = false;
 
-		for (int i = 0; i < n; i++) {
-			final char c = input.charAt(i);
+		while (it.hasNext()) {
+			final char c = it.current();
 
 			if (inBlockComment) {
 				// End of block comment
-				if (i + 1 < n && c == '*' && input.charAt(i + 1) == '/') {
+				if (c == '*' && it.peekNext() == '/') {
 					inBlockComment = false;
-					i++;
+					it.move();
 				}
 			} else if (inLineComment) {
 				// End of line comment
@@ -74,20 +73,22 @@ public final class Parser {
 				}
 			} else if (inString) {
 				sb.append(c);
-				if (c == '\\' && i + 1 < n) {
-					i++;
-					sb.append(input.charAt(i));
+				if (c == '\\') {
+					it.move();
+					if (it.hasNext()) {
+						sb.append(it.current());
+					}
 				} else if (c == '"') {
 					inString = false;
 				}
 			} else {
 				// Not inside a string or comment
-				if (i + 1 < n && c == '/' && input.charAt(i + 1) == '*') {
+				if (c == '/' && it.peekNext() == '*') {
 					inBlockComment = true;
-					i++;
-				} else if (i + 1 < n && c == '/' && input.charAt(i + 1) == '/') {
+					it.move();
+				} else if (c == '/' && it.peekNext() == '/') {
 					inLineComment = true;
-					i++;
+					it.move();
 				} else {
 					sb.append(c);
 					if (c == '"') {
@@ -95,6 +96,8 @@ public final class Parser {
 					}
 				}
 			}
+
+			it.move();
 		}
 
 		if (inBlockComment) {
