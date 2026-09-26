@@ -55,6 +55,8 @@ public final class Parser {
 		boolean inBlockComment = false;
 		boolean inLineComment = false;
 		boolean inString = false;
+		int startLine = -1;
+		int startColumn = -1;
 
 		while (it.hasNext()) {
 			final char c = it.current();
@@ -85,6 +87,8 @@ public final class Parser {
 				// Not inside a string or comment
 				if (c == '/' && it.peekNext() == '*') {
 					inBlockComment = true;
+					startLine = it.getLine();
+					startColumn = it.getColumn();
 					it.move();
 				} else if (c == '/' && it.peekNext() == '/') {
 					inLineComment = true;
@@ -93,6 +97,8 @@ public final class Parser {
 					sb.append(c);
 					if (c == '"') {
 						inString = true;
+						startLine = it.getLine();
+						startColumn = it.getColumn();
 					}
 				}
 			}
@@ -101,10 +107,12 @@ public final class Parser {
 		}
 
 		if (inBlockComment) {
-			throw new ParsingException("Unterminated block comment.");
+			throw new ParsingException(
+					String.format("Unterminated block comment started at %d:%d.", startLine, startColumn));
 		}
 		if (inString) {
-			throw new ParsingException("Unterminated string literal.");
+			throw new ParsingException(
+					String.format("Unterminated string literal started at %d:%d.", startLine, startColumn));
 		}
 
 		return sb.toString();
