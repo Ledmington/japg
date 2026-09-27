@@ -217,11 +217,15 @@ public final class Parser {
 		return g;
 	}
 
+	private static boolean isSymbol(final Object obj, final SymbolType type) {
+		return obj instanceof Symbol(final SymbolType t, final int line, final int column) && t == type;
+	}
+
 	private static Optional<Pair<Integer, Integer>> findBrackets(final List<Object> v) {
 		final int n = v.size();
 		int leftBracketPosition = -1;
 		for (int i = 0; i < n; i++) {
-			if (v.get(i).equals(SymbolType.LEFT_PARENTHESIS.getCharacter())) {
+			if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)) {
 				leftBracketPosition = i;
 				break;
 			}
@@ -230,9 +234,9 @@ public final class Parser {
 			return Optional.empty();
 		}
 		for (int i = leftBracketPosition + 1; i < n; i++) {
-			if (v.get(i).equals(SymbolType.LEFT_PARENTHESIS.getCharacter())) {
+			if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)) {
 				leftBracketPosition = i;
-			} else if (v.get(i).equals(SymbolType.RIGHT_PARENTHESIS.getCharacter())) {
+			} else if (isSymbol(v.get(i), SymbolType.RIGHT_PARENTHESIS)) {
 				return Optional.of(Pair.of(leftBracketPosition, i));
 			}
 		}
@@ -301,7 +305,7 @@ public final class Parser {
 
 	private static void convertDotsToAlternations(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i).equals(SymbolType.DOT.getCharacter())) {
+			if (isSymbol(v.get(i), SymbolType.DOT)) {
 				v.set(
 						i,
 						new Or(IntStream.range(32, 127)
@@ -340,9 +344,9 @@ public final class Parser {
 		if (i + 2 >= v.size()) {
 			return false;
 		}
-		if (v.get(i).equals(SymbolType.LEFT_PARENTHESIS.getCharacter())
+		if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)
 				&& v.get(i + 1) instanceof final Expression exp
-				&& v.get(i + 2).equals(SymbolType.RIGHT_PARENTHESIS.getCharacter())) {
+				&& isSymbol(v.get(i + 2), SymbolType.RIGHT_PARENTHESIS)) {
 			v.subList(i, i + 3).clear();
 			v.add(i, exp);
 			return true;
@@ -355,9 +359,9 @@ public final class Parser {
 			return false;
 		}
 		if (v.get(i) instanceof final NonTerminal start
-				&& v.get(i + 1).equals(SymbolType.EQUAL_SIGN.getCharacter())
+				&& isSymbol(v.get(i + 1), SymbolType.EQUAL_SIGN)
 				&& v.get(i + 2) instanceof final Expression exp
-				&& v.get(i + 3).equals(SymbolType.SEMICOLON.getCharacter())) {
+				&& isSymbol(v.get(i + 3), SymbolType.SEMICOLON)) {
 			v.subList(i, i + 4).clear();
 			v.add(i, new Production(start, exp));
 			return true;
@@ -400,13 +404,12 @@ public final class Parser {
 		int count = 0;
 		int j = i + 1;
 		for (; j < v.size() - 1; j++) {
-			if (v.get(j).equals(SymbolType.VERTICAL_LINE.getCharacter())
+			if (isSymbol(v.get(j), SymbolType.VERTICAL_LINE)
 					&& v.get(j + 1) instanceof Or(final List<Expression> exp)) {
 				expressions.addAll(exp);
 				count++;
 				j++;
-			} else if (v.get(j).equals(SymbolType.VERTICAL_LINE.getCharacter())
-					&& v.get(j + 1) instanceof final Expression exp) {
+			} else if (isSymbol(v.get(j), SymbolType.VERTICAL_LINE) && v.get(j + 1) instanceof final Expression exp) {
 				expressions.add(exp);
 				count++;
 				j++;
@@ -426,7 +429,7 @@ public final class Parser {
 	private static boolean asterisk(final List<Object> v, final int i) {
 		if (i + 1 < v.size()
 				&& v.get(i) instanceof final Expression exp
-				&& v.get(i + 1).equals(SymbolType.ASTERISK.getCharacter())) {
+				&& isSymbol(v.get(i + 1), SymbolType.ASTERISK)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new ZeroOrMore(exp));
 			return true;
@@ -438,7 +441,7 @@ public final class Parser {
 		if (i + 1 >= v.size()) {
 			return false;
 		}
-		if (v.get(i) instanceof final Expression exp && v.get(i + 1).equals(SymbolType.PLUS.getCharacter())) {
+		if (v.get(i) instanceof final Expression exp && isSymbol(v.get(i + 1), SymbolType.PLUS)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new OneOrMore(exp));
 			return true;
@@ -450,7 +453,7 @@ public final class Parser {
 		if (i + 1 >= v.size()) {
 			return false;
 		}
-		if (v.get(i) instanceof final Expression exp && v.get(i + 1).equals(SymbolType.QUESTION_MARK.getCharacter())) {
+		if (v.get(i) instanceof final Expression exp && isSymbol(v.get(i + 1), SymbolType.QUESTION_MARK)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new ZeroOrOne(exp));
 			return true;

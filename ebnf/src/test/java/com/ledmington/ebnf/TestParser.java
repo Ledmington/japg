@@ -222,8 +222,12 @@ public final class TestParser {
 	private static Stream<Arguments> invalidTestCases() {
 		return Stream.of(
 				Arguments.of("", "No tokens."),
-				Arguments.of("=", "Expected root element to be a grammar but was 'EQUAL_SIGN'."),
-				Arguments.of(";", "Expected root element to be a grammar but was 'SEMICOLON'."),
+				Arguments.of(
+						"=",
+						"Expected root element to be a grammar but was 'Symbol[type=EQUAL_SIGN, line=1, column=1]'."),
+				Arguments.of(
+						";",
+						"Expected root element to be a grammar but was 'Symbol[type=SEMICOLON, line=1, column=1]'."),
 				Arguments.of("a", "Expected root element to be a grammar but was 'NonTerminal[name=a]'."),
 				Arguments.of("a=\"", "Unterminated string literal started at 1:3."),
 				Arguments.of("a=\";", "Unterminated string literal started at 1:3."),
@@ -238,17 +242,17 @@ public final class TestParser {
 						"a=\"a\");",
 						"Unknown parsing state:\n"
 								+ "   0 : \nnon_terminal 'a'\n\n"
-								+ "   1 : \nEQUAL_SIGN\n"
+								+ "   1 : \nSymbol[type=EQUAL_SIGN, line=1, column=2]\n"
 								+ "   2 : \nterminal 'a'\n\n"
-								+ "   3 : \nRIGHT_PARENTHESIS\n"
-								+ "   4 : \nSEMICOLON"),
+								+ "   3 : \nSymbol[type=RIGHT_PARENTHESIS, line=1, column=6]\n"
+								+ "   4 : \nSymbol[type=SEMICOLON, line=1, column=7]"),
 				Arguments.of(
 						"a=(\"a\";)",
 						"Unknown parsing state:\n"
-								+ "   0 : \nLEFT_PARENTHESIS\n"
+								+ "   0 : \nSymbol[type=LEFT_PARENTHESIS, line=1, column=3]\n"
 								+ "   1 : \nterminal 'a'\n\n"
-								+ "   2 : \nSEMICOLON\n"
-								+ "   3 : \nRIGHT_PARENTHESIS"),
+								+ "   2 : \nSymbol[type=SEMICOLON, line=1, column=7]\n"
+								+ "   3 : \nSymbol[type=RIGHT_PARENTHESIS, line=1, column=8]"),
 				Arguments.of("a=\"a\";/", "Unknown character '/' (U+002F) at 1:7."),
 				Arguments.of("a=\"a\";/*", "Unterminated block comment started at 1:7."),
 				Arguments.of("a=\"a\";/**", "Unterminated block comment started at 1:7."),
