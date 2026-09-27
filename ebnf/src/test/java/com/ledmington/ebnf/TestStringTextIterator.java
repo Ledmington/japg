@@ -28,16 +28,16 @@ import org.junit.jupiter.api.Test;
 
 // FIXME: this warning suppression should not be needed
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public final class TestTextIterator {
+public final class TestStringTextIterator {
 
 	@Test
 	void emptyHasNoNext() {
-		assertFalse(new TextIterator("").hasNext());
+		assertFalse(new StringTextIterator("").hasNext());
 	}
 
 	@Test
 	void iterateAllCharacters() {
-		final TextIterator it = new TextIterator("abc");
+		final TextIterator it = new StringTextIterator("abc");
 		final StringBuilder sb = new StringBuilder();
 		while (it.hasNext()) {
 			sb.append(it.current());
@@ -48,7 +48,7 @@ public final class TestTextIterator {
 
 	@Test
 	void peekNext() {
-		final TextIterator it = new TextIterator("ab");
+		final TextIterator it = new StringTextIterator("ab");
 		assertEquals('a', it.current());
 		assertEquals('b', it.peekNext());
 		it.move();
@@ -58,7 +58,7 @@ public final class TestTextIterator {
 
 	@Test
 	void lineAndColumn() {
-		final TextIterator it = new TextIterator("ab\nc");
+		final TextIterator it = new StringTextIterator("ab\nc");
 		assertEquals(1, it.getLine());
 		assertEquals(1, it.getColumn());
 		it.move();
@@ -75,8 +75,8 @@ public final class TestTextIterator {
 
 	@Test
 	void equality() {
-		final TextIterator a = new TextIterator("abc");
-		final TextIterator b = new TextIterator("abc");
+		final TextIterator a = new StringTextIterator("abc");
+		final TextIterator b = new StringTextIterator("abc");
 		assertEquals(a, b);
 		assertEquals(a.hashCode(), b.hashCode());
 		a.move();

@@ -37,10 +37,10 @@ public final class Parser {
 	 */
 	public static Grammar parse(final String input) {
 		try {
-			final TextIterator it = new TextIterator(input);
+			final TextIterator it = new StringTextIterator(input);
 			final String stripped = removeComments(it);
 
-			final TextIterator it2 = new TextIterator(stripped);
+			final TextIterator it2 = new StringTextIterator(stripped);
 			final List<Token> tokens = tokenize(it2);
 
 			return parse(tokens);
