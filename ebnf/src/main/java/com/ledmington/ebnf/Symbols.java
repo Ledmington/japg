@@ -50,9 +50,6 @@ public enum Symbols implements Token {
 	/** The asterisk symbol (U+002A). */
 	ASTERISK('*'),
 
-	/** The hyphens minus symbol (U+002D). */
-	DASH('-'),
-
 	/** The double quotes symbol (U+0022). */
 	DOUBLE_QUOTES('\"'),
 
