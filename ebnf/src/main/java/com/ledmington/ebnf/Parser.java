@@ -274,7 +274,8 @@ public final class Parser {
 
 			if (v.size() == initialSize) {
 				throw new ParsingException(String.format(
-						"Unknown parsing state:%n%s",
+						"Unknown parsing state after %d passes:%n%s",
+						pass,
 						IntStream.range(0, v.size())
 								.mapToObj(i -> String.format(
 										" %3d : %n%s",
@@ -289,27 +290,29 @@ public final class Parser {
 
 	private static void convertStringLiteralsToTerminals(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i) instanceof StringLiteral(final String literal, final int line, final int startColumn)) {
-				v.set(i, new Terminal(literal));
+			if (v.get(i) instanceof final StringLiteral s) {
+				v.set(i, new Terminal(s.literal(), false, s.getLine(), s.getStartColumn(), s.getEndColumn()));
 			}
 		}
 	}
 
 	private static void convertWordsToNonTerminals(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i) instanceof Word(final String content, final int line, final int startColumn)) {
-				v.set(i, new NonTerminal(content));
+			if (v.get(i) instanceof final Word w) {
+				v.set(i, new NonTerminal(w.word(), w.getLine(), w.getStartColumn(), w.getEndColumn()));
 			}
 		}
 	}
 
 	private static void convertDotsToAlternations(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (isSymbol(v.get(i), SymbolType.DOT)) {
+			if (v.get(i) instanceof final Symbol dot && dot.type() == SymbolType.DOT) {
+				// Every character matched by the dot gets the position of the dot itself
 				v.set(
 						i,
 						new Or(IntStream.range(32, 127)
-								.mapToObj(x -> (Expression) new Terminal("" + (char) x))
+								.mapToObj(x -> (Expression) new Terminal(
+										"" + (char) x, false, dot.getLine(), dot.getStartColumn(), dot.getEndColumn()))
 								.toList()));
 			}
 		}

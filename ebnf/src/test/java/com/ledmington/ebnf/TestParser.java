@@ -228,7 +228,9 @@ public final class TestParser {
 				Arguments.of(
 						";",
 						"Expected root element to be a grammar but was 'Symbol[type=SEMICOLON, line=1, column=1]'."),
-				Arguments.of("a", "Expected root element to be a grammar but was 'NonTerminal[name=a]'."),
+				Arguments.of(
+						"a",
+						"Expected root element to be a grammar but was 'NonTerminal[name=a, line=1, startColumn=1, endColumn=1]'."),
 				Arguments.of("a=\"", "Unterminated string literal started at 1:3."),
 				Arguments.of("a=\";", "Unterminated string literal started at 1:3."),
 				Arguments.of("a=\"a\",;", "Unknown character ',' (U+002C) at 1:6."),
@@ -240,7 +242,7 @@ public final class TestParser {
 				Arguments.of("a=(\"a\";", "No matching pair of brackets was found."),
 				Arguments.of(
 						"a=\"a\");",
-						"Unknown parsing state:\n"
+						"Unknown parsing state after 1 passes:\n"
 								+ "   0 : \nnon_terminal 'a'\n\n"
 								+ "   1 : \nSymbol[type=EQUAL_SIGN, line=1, column=2]\n"
 								+ "   2 : \nterminal 'a'\n\n"
@@ -248,7 +250,7 @@ public final class TestParser {
 								+ "   4 : \nSymbol[type=SEMICOLON, line=1, column=7]"),
 				Arguments.of(
 						"a=(\"a\";)",
-						"Unknown parsing state:\n"
+						"Unknown parsing state after 1 passes:\n"
 								+ "   0 : \nSymbol[type=LEFT_PARENTHESIS, line=1, column=3]\n"
 								+ "   1 : \nterminal 'a'\n\n"
 								+ "   2 : \nSymbol[type=SEMICOLON, line=1, column=7]\n"

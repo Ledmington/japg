@@ -18,4 +18,33 @@
 package com.ledmington.ebnf;
 
 /** A common type for all elements in an EBNF grammar. */
-public interface Node {}
+public interface Node {
+
+	/**
+	 * Returns the line number where this node starts.
+	 *
+	 * @return The start line number.
+	 */
+	int getStartLine();
+
+	/**
+	 * Returns the line number where this node ends.
+	 *
+	 * @return The end line number.
+	 */
+	int getEndLine();
+
+	/**
+	 * Returns the column number where this node starts on the starting line.
+	 *
+	 * @return The start column number.
+	 */
+	int getStartColumn();
+
+	/**
+	 * Returns the column number where this node ends on the ending line.
+	 *
+	 * @return The end column number.
+	 */
+	int getEndColumn();
+}

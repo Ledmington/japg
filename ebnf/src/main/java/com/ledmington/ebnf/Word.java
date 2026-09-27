@@ -37,6 +37,6 @@ public record Word(String word, int line, int startColumn) implements Token {
 
 	@Override
 	public int getEndColumn() {
-		return startColumn + word.length();
+		return startColumn + word.length() - 1;
 	}
 }

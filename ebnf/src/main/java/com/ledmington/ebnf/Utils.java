@@ -72,7 +72,7 @@ public final class Utils {
 			case Terminal t ->
 				sb.append(indent)
 						.append("terminal '")
-						.append(Utils.getEscapedString(t.literal()))
+						.append(Utils.getEscapedString(t.getLiteral()))
 						.append("'\n");
 			case NonTerminal nt ->
 				sb.append(indent).append("non_terminal '").append(nt.name()).append("'\n");
@@ -193,7 +193,7 @@ public final class Utils {
 
 	private static void printAsGrammar(final StringBuilder sb, final Expression exp) {
 		switch (exp) {
-			case Terminal t -> sb.append("'").append(t.literal()).append("'");
+			case Terminal t -> sb.append("'").append(t.getLiteral()).append("'");
 			case NonTerminal nt -> sb.append(nt.name());
 			case Sequence s -> printAsGrammar(sb, s, " ");
 			case Or or -> printAsGrammar(sb, or, " | ");
