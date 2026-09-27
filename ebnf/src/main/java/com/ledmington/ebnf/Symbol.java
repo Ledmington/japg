@@ -17,27 +17,26 @@
  */
 package com.ledmington.ebnf;
 
-/** A common type for all tokens. */
-public interface Token {
+/**
+ * A single-character token.
+ *
+ * @param type The type of symbol.
+ * @param line The line where this symbol appears.
+ * @param column The column where this symbol appears.
+ */
+public record Symbol(SymbolType type, int line, int column) implements Token {
+	@Override
+	public int getLine() {
+		return line;
+	}
 
-	/**
-	 * Returns the line where this token appears. It is assumed that every token is on a single line.
-	 *
-	 * @return The line where this token appears, starting from 1.
-	 */
-	int getLine();
+	@Override
+	public int getStartColumn() {
+		return column;
+	}
 
-	/**
-	 * Returns the column where this token starts.
-	 *
-	 * @return The column where this token starts, starting from 1.
-	 */
-	int getStartColumn();
-
-	/**
-	 * Returns the column where this token ends.
-	 *
-	 * @return The column where this token ends, starting from 1.
-	 */
-	int getEndColumn();
+	@Override
+	public int getEndColumn() {
+		return column;
+	}
 }

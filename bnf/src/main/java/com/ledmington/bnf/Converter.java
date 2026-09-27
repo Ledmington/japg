@@ -85,7 +85,7 @@ public final class Converter {
 	private static List<BNFProduction> convertToBnfProductions(final BNFNonTerminal root, final Expression exp) {
 		final List<BNFProduction> productions = new ArrayList<>();
 		switch (exp) {
-			case Terminal t -> productions.add(new BNFProduction(root, new BNFTerminal(t.literal())));
+			case Terminal t -> productions.add(new BNFProduction(root, new BNFTerminal(t.getLiteral())));
 			case NonTerminal nt -> productions.add(new BNFProduction(root, new BNFNonTerminal(nt.name())));
 			case Or or -> {
 				final List<BNFExpression> alternatives = new ArrayList<>();
@@ -152,15 +152,15 @@ public final class Converter {
 	 */
 	private static BNFExpression convertSequenceElement(
 			final BNFNonTerminal root, final Expression e, final List<BNFProduction> productions) {
-		if (e instanceof NonTerminal(final String name)) {
-			return new BNFNonTerminal(name);
+		if (e instanceof final NonTerminal nt) {
+			return new BNFNonTerminal(nt.name());
 		}
 		if (e instanceof final Terminal t) {
-			return new BNFTerminal(t.literal());
+			return new BNFTerminal(t.getLiteral());
 		}
-		if (e instanceof final ZeroOrOne zoo && zoo.inner() instanceof NonTerminal(final String name)) {
+		if (e instanceof final ZeroOrOne zoo && zoo.inner() instanceof final NonTerminal nt) {
 			// x = ... y? ... ; -> a synthetic 'opt_y' non-terminal, since its meaning is unambiguous.
-			final BNFNonTerminal opt = uniqueName("opt_" + name);
+			final BNFNonTerminal opt = uniqueName("opt_" + nt.name());
 			productions.addAll(convertToBnfProductions(opt, e));
 			return opt;
 		}
@@ -182,11 +182,11 @@ public final class Converter {
 	 * production for it.
 	 */
 	private static BNFExpression embedInlineOrSynthesize(final Expression e, final List<BNFProduction> productions) {
-		if (e instanceof NonTerminal(final String name)) {
-			return new BNFNonTerminal(name);
+		if (e instanceof final NonTerminal nt) {
+			return new BNFNonTerminal(nt.name());
 		}
 		if (e instanceof final Terminal t) {
-			return new BNFTerminal(t.literal());
+			return new BNFTerminal(t.getLiteral());
 		}
 		if (e instanceof final Sequence seq) {
 			final List<BNFExpression> elements = new ArrayList<>();
@@ -203,11 +203,11 @@ public final class Converter {
 	 * directly, anything else is extracted into a new synthetic production (accumulated into {@code productions}).
 	 */
 	private static BNFExpression embedOrSynthesize(final Expression e, final List<BNFProduction> productions) {
-		if (e instanceof NonTerminal(final String name)) {
-			return new BNFNonTerminal(name);
+		if (e instanceof final NonTerminal nt) {
+			return new BNFNonTerminal(nt.name());
 		}
 		if (e instanceof final Terminal t) {
-			return new BNFTerminal(t.literal());
+			return new BNFTerminal(t.getLiteral());
 		}
 		final BNFNonTerminal tmp = getNewNonTerminal();
 		productions.addAll(convertToBnfProductions(tmp, e));
