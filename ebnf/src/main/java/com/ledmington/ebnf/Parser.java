@@ -144,9 +144,6 @@ public final class Parser {
 			} else if (ch == Symbols.ASTERISK.getCharacter()) {
 				tokens.add(Symbols.ASTERISK);
 				it.next();
-			} else if (ch == Symbols.DASH.getCharacter()) {
-				tokens.add(Symbols.DASH);
-				it.next();
 			} else if (ch == Symbols.DOUBLE_QUOTES.getCharacter()) {
 				tokens.add(readStringLiteral(it));
 			} else {
