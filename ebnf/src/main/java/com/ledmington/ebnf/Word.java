@@ -18,8 +18,25 @@
 package com.ledmington.ebnf;
 
 /**
- * A sequence of alphabetic characters.
+ * A sequence of alphabetic characters (or an underscore).
  *
  * @param word The content of this word.
+ * @param line The line number where this word starts.
+ * @param startColumn The column number where this word starts.
  */
-public record Word(String word) implements Token {}
+public record Word(String word, int line, int startColumn) implements Token {
+	@Override
+	public int getLine() {
+		return line;
+	}
+
+	@Override
+	public int getStartColumn() {
+		return startColumn;
+	}
+
+	@Override
+	public int getEndColumn() {
+		return startColumn + word.length();
+	}
+}

@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class TestParser {
@@ -220,32 +219,48 @@ public final class TestParser {
 		return new OneOrMore(inner);
 	}
 
+	private static Stream<Arguments> invalidTestCases() {
+		return Stream.of(
+				Arguments.of("", "No tokens."),
+				Arguments.of("=", "Expected root element to be a grammar but was 'EQUAL_SIGN'."),
+				Arguments.of(";", "Expected root element to be a grammar but was 'SEMICOLON'."),
+				Arguments.of("a", "Expected root element to be a grammar but was 'NonTerminal[name=a]'."),
+				Arguments.of("a=\"", "Unterminated string literal started at 1:3."),
+				Arguments.of("a=\";", "Unterminated string literal started at 1:3."),
+				Arguments.of("a=\"a\",;", "Unknown character ',' (U+002C) at 1:6."),
+				Arguments.of("a=,\"a\";", "Unknown character ',' (U+002C) at 1:3."),
+				Arguments.of("a=\"a\",,\"a\";", "Unknown character ',' (U+002C) at 1:6."),
+				Arguments.of("a=\"a\nb\";", "Unexpected newline while reading string literal at 1:5."),
+				Arguments.of("1=\"a\";", "Unknown character '1' (U+0031) at 1:1."),
+				Arguments.of("1a=\"a\";", "Unknown character '1' (U+0031) at 1:1."),
+				Arguments.of("a=(\"a\";", "No matching pair of brackets was found."),
+				Arguments.of(
+						"a=\"a\");",
+						"Unknown parsing state:\n"
+								+ "   0 : \nnon_terminal 'a'\n\n"
+								+ "   1 : \nEQUAL_SIGN\n"
+								+ "   2 : \nterminal 'a'\n\n"
+								+ "   3 : \nRIGHT_PARENTHESIS\n"
+								+ "   4 : \nSEMICOLON"),
+				Arguments.of(
+						"a=(\"a\";)",
+						"Unknown parsing state:\n"
+								+ "   0 : \nLEFT_PARENTHESIS\n"
+								+ "   1 : \nterminal 'a'\n\n"
+								+ "   2 : \nSEMICOLON\n"
+								+ "   3 : \nRIGHT_PARENTHESIS"),
+				Arguments.of("a=\"a\";/", "Unknown character '/' (U+002F) at 1:7."),
+				Arguments.of("a=\"a\";/*", "Unterminated block comment started at 1:7."),
+				Arguments.of("a=\"a\";/**", "Unterminated block comment started at 1:7."),
+				Arguments.of("a=/*\"*/a\";", "Unterminated string literal started at 1:9."),
+				Arguments.of("a=\"a/*\"*/;", "Unknown character '/' (U+002F) at 1:9."));
+	}
+
 	@ParameterizedTest
-	@ValueSource(
-			strings = {
-				"",
-				"=",
-				";",
-				"a",
-				"a=\"",
-				"a=\";",
-				"a=\"a\",;",
-				"a=,\"a\";",
-				"a=\"a\",,\"a\";",
-				"a=\"a\nb\";",
-				"1=\"a\";",
-				"1a=\"a\";",
-				"a=(\"a\";",
-				"a=\"a\");",
-				"a=(\"a\";)",
-				"a=\"a\";/",
-				"a=\"a\";/*",
-				"a=\"a\";/**",
-				"a=/*\"*/a\";",
-				"a=\"a/*\"*/;"
-			})
-	void invalid(final String input) {
-		assertThrows(ParsingException.class, () -> Parser.parse(input));
+	@MethodSource("invalidTestCases")
+	void invalid(final String input, final String expectedMessage) {
+		final ParsingException e = assertThrows(ParsingException.class, () -> Parser.parse(input));
+		assertEquals(expectedMessage, e.getMessage());
 	}
 
 	private static ZeroOrMore zero_or_more(final Expression exp) {
