@@ -307,10 +307,11 @@ public final class Parser {
 	private static void convertDotsToAlternations(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
 			if (v.get(i) instanceof final Symbol dot && dot.type() == SymbolType.DOT) {
-				// Every character matched by the dot gets the position of the dot itself
+				// The dot matches every printable ASCII character and the common whitespace ones. Every character
+				// matched by the dot gets the position of the dot itself.
 				v.set(
 						i,
-						new Or(IntStream.range(32, 127)
+						new Or(IntStream.concat(IntStream.of('\t', '\n', '\r'), IntStream.range(32, 127))
 								.mapToObj(x -> (Expression) new Terminal(
 										"" + (char) x, false, dot.getLine(), dot.getStartColumn(), dot.getEndColumn()))
 								.toList()));
