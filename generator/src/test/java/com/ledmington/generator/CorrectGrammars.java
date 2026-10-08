@@ -26,6 +26,7 @@ import com.ledmington.ebnf.Grammar;
 import com.ledmington.ebnf.NonTerminal;
 import com.ledmington.ebnf.OneOrMore;
 import com.ledmington.ebnf.Or;
+import com.ledmington.ebnf.Parser;
 import com.ledmington.ebnf.Production;
 import com.ledmington.ebnf.Sequence;
 import com.ledmington.ebnf.Terminal;
@@ -121,7 +122,12 @@ public final class CorrectGrammars {
 			Arguments.of(
 					g(p("start", seq(t("\\"), or(t("n"), t("t"))))),
 					List.of("\\n", "\\t"),
-					List.of("", "\\", "\n", "\t", "n", "t")));
+					List.of("", "\\", "\n", "\t", "n", "t")),
+			// the dot matches whitespace too
+			Arguments.of(
+					Parser.parse("start = . * ;"),
+					List.of("", "a", "\n", "\t", "\r", "a\nb\tc\r\n"),
+					List.of("\u00e8", "a\u0000")));
 
 	static Grammar g(final Production... productions) {
 		return new Grammar(List.of(productions));
