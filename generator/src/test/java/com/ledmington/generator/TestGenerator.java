@@ -18,10 +18,16 @@
 package com.ledmington.generator;
 
 import static com.ledmington.generator.CorrectGrammars.TEST_CASES;
+import static com.ledmington.generator.CorrectGrammars.g;
+import static com.ledmington.generator.CorrectGrammars.or;
+import static com.ledmington.generator.CorrectGrammars.p;
+import static com.ledmington.generator.CorrectGrammars.seq;
+import static com.ledmington.generator.CorrectGrammars.t;
+import static com.ledmington.generator.CorrectGrammars.zero_or_one;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -222,12 +228,54 @@ public final class TestGenerator {
 		final Object instance = klass.getConstructors()[0].newInstance();
 		final Method entrypoint = klass.getMethod("parse", String.class);
 
-		final Object obj = entrypoint.invoke(instance, wrongInput);
-		assertNull(
-				obj,
+		final InvocationTargetException e = assertThrows(
+				InvocationTargetException.class,
+				() -> entrypoint.invoke(instance, wrongInput),
 				() -> String.format(
 						"Expected the following grammar to NOT be able to parse the input '%s' but it did.%n%s%n",
 						wrongInput, Utils.prettyPrint(g)));
+		assertEquals(
+				"ParsingException",
+				e.getCause().getClass().getSimpleName(),
+				() -> String.format("Expected a ParsingException but got '%s'.", e.getCause()));
+	}
+
+	private static Stream<Arguments> errorMessageCases() {
+		final Grammar single = g(p("start", t("a")));
+		final Grammar word = g(p("start", t("abc")));
+		final Grammar optional = g(p("start", seq(t("a"), zero_or_one(t("b")), t("c"))));
+		final Grammar alternation = g(p("start", or(t("a"), t("b"))));
+		final Grammar multiline = g(p("start", seq(t("a"), t("b"))), p("_WS", t("\n")));
+		return Stream.of(
+				// lexical errors
+				Arguments.of(single, "b", "Unexpected character 'b' (U+0062) at 1:1."),
+				Arguments.of(word, "abd", "Unexpected character 'd' (U+0064) at 1:3."),
+				Arguments.of(word, "ab", "Unexpected end of input at 1:3."),
+				Arguments.of(multiline, "a\n\nc", "Unexpected character 'c' (U+0063) at 3:1."),
+				// syntax errors
+				Arguments.of(single, "", "Unexpected end of input at 1:1, expected 'a'."),
+				Arguments.of(single, "aa", "Unexpected 'a' at 1:2, expected end of input."),
+				Arguments.of(optional, "ab", "Unexpected end of input at 1:3, expected 'c'."),
+				Arguments.of(optional, "abb", "Unexpected 'b' at 1:3, expected 'c'."),
+				Arguments.of(alternation, "", "Unexpected end of input at 1:1, expected one of: 'a', 'b'."),
+				Arguments.of(multiline, "a\n\na", "Unexpected 'a' at 3:1, expected 'b'."),
+				Arguments.of(multiline, "a\n", "Unexpected end of input at 2:1, expected 'b'."));
+	}
+
+	@ParameterizedTest
+	@MethodSource("errorMessageCases")
+	void errorMessages(final Grammar g, final String wrongInput, final String expectedMessage)
+			throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+		final String className = "MyErrorParser";
+		final String sourceCode = Generator.generate(g, className, "", "\t", false);
+
+		final Class<?> klass = compileJavaSource(className, sourceCode);
+		final Object instance = klass.getConstructors()[0].newInstance();
+		final Method entrypoint = klass.getMethod("parse", String.class);
+
+		final InvocationTargetException e =
+				assertThrows(InvocationTargetException.class, () -> entrypoint.invoke(instance, wrongInput));
+		assertEquals(expectedMessage, e.getCause().getMessage());
 	}
 
 	@ParameterizedTest

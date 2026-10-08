@@ -144,6 +144,18 @@ public final class BnfParserSerializer {
 				.append("return new Terminal(v[pos++].content());\n")
 				.deindent()
 				.append("}\n")
+				// Remember the furthest failure, which is where the error is reported if the whole parse fails
+				.append("if (pos > farthestPos) {\n")
+				.indent()
+				.append("farthestPos = pos;\n")
+				.append("expectedAtFarthestPos.clear();\n")
+				.deindent()
+				.append("}\n")
+				.append("if (pos == farthestPos) {\n")
+				.indent()
+				.append("expectedAtFarthestPos.add(expected);\n")
+				.deindent()
+				.append("}\n")
 				.append("return null;\n")
 				.deindent()
 				.append("}\n");
