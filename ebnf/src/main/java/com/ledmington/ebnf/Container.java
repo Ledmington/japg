@@ -27,4 +27,24 @@ public interface Container extends Expression {
 	 * @return The contained expression.
 	 */
 	Expression inner();
+
+	@Override
+	default int getStartLine() {
+		return inner().getStartLine();
+	}
+
+	@Override
+	default int getStartColumn() {
+		return inner().getStartColumn();
+	}
+
+	@Override
+	default int getEndLine() {
+		return inner().getEndLine();
+	}
+
+	@Override
+	default int getEndColumn() {
+		return inner().getEndColumn();
+	}
 }

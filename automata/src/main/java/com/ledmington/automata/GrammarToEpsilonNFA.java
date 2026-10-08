@@ -188,9 +188,9 @@ public final class GrammarToEpsilonNFA {
 	private void convertTerminal(final Terminal t, final State start, final State end) {
 		State prev = stateFactory.getNewState();
 		builder.addTransition(start, NFA.EPSILON, prev);
-		for (int i = 0; i < t.literal().length(); i++) {
+		for (int i = 0; i < t.getLiteral().length(); i++) {
 			final State s = stateFactory.getNewState();
-			builder.addTransition(prev, t.literal().charAt(i), s);
+			builder.addTransition(prev, t.getLiteral().charAt(i), s);
 			prev = s;
 		}
 		builder.addTransition(prev, NFA.EPSILON, end);

@@ -29,4 +29,24 @@ public interface Composite extends Expression {
 	 * @return The ordered list of expressions.
 	 */
 	List<Expression> expressions();
+
+	@Override
+	default int getStartLine() {
+		return expressions().getFirst().getStartLine();
+	}
+
+	@Override
+	default int getStartColumn() {
+		return expressions().getFirst().getStartColumn();
+	}
+
+	@Override
+	default int getEndLine() {
+		return expressions().getLast().getEndLine();
+	}
+
+	@Override
+	default int getEndColumn() {
+		return expressions().getLast().getEndColumn();
+	}
 }

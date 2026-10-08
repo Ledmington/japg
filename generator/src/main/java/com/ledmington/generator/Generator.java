@@ -96,7 +96,9 @@ public final class Generator {
 				.append("import java.nio.ByteOrder;\n")
 				.append("import java.util.ArrayList;\n")
 				.append("import java.util.Base64;\n")
-				.append("import java.util.List;\n");
+				.append("import java.util.EnumSet;\n")
+				.append("import java.util.List;\n")
+				.append("import java.util.Set;\n");
 		sb.append("import java.util.Objects;\n");
 		if (atLeastOneSequence) {
 			sb.append("import java.util.Stack;\n");
@@ -109,10 +111,38 @@ public final class Generator {
 				.append(" {\n")
 				.indent()
 				.append("private Token[] v = null;\n")
-				.append("private int pos = 0;\n");
+				.append("private int pos = 0;\n")
+				.append("private int farthestPos = 0;\n")
+				.append("private final Set<TokenType> expectedAtFarthestPos = EnumSet.noneOf(TokenType.class);\n")
+				.append("private int endLine = 1;\n")
+				.append("private int endColumn = 1;\n");
 		if (atLeastOneSequence) {
 			sb.append("private final Stack<Integer> stack = new Stack<>();\n");
 		}
+		sb.append("public static final class ParsingException extends RuntimeException {\n")
+				.indent()
+				.append("private static final long serialVersionUID = 6727988300051751418L;\n")
+				.append("private final int line;\n")
+				.append("private final int column;\n")
+				.append("public ParsingException(final String message, final int line, final int column) {\n")
+				.indent()
+				.append("super(message);\n")
+				.append("this.line = line;\n")
+				.append("this.column = column;\n")
+				.deindent()
+				.append("}\n")
+				.append("public int getLine() {\n")
+				.indent()
+				.append("return line;\n")
+				.deindent()
+				.append("}\n")
+				.append("public int getColumn() {\n")
+				.indent()
+				.append("return column;\n")
+				.deindent()
+				.append("}\n")
+				.deindent()
+				.append("}\n");
 		sb.append("public interface Node {\n")
 				.indent()
 				.append("String name();\n")
@@ -151,33 +181,79 @@ public final class Generator {
 
 		sb.append("public Node parse(final String input) {\n")
 				.indent()
-				.append("final Node result;\n")
 				.append("final " + lexerName + " lexer = new " + lexerName + "();\n")
-				.append("try {\n")
-				.indent()
 				.append("this.v = lexer.tokenize(input).toArray(new Token[0]);\n")
-				.deindent()
-				.append("} catch (final IllegalArgumentException e) {\n")
-				.indent()
-				.append("return null;\n")
+				.append("this.endLine = lexer.getEndLine();\n")
+				.append("this.endColumn = lexer.getEndColumn();\n")
+				.append("this.pos = 0;\n")
+				.append("this.farthestPos = 0;\n")
+				.append("this.expectedAtFarthestPos.clear();\n");
+		if (atLeastOneSequence) {
+			sb.append("this.stack.clear();\n");
+		}
+		sb.append("final Node result = parse_" + startSymbol + "();\n");
+		if (atLeastOneSequence) {
+			sb.append("if (result != null && pos == v.length && stack.isEmpty()) {\n");
+		} else {
+			sb.append("if (result != null && pos == v.length) {\n");
+		}
+		sb.indent()
+				.append("return result;\n")
 				.deindent()
 				.append("}\n")
-				.append("this.pos = 0;\n")
-				.append("try {\n")
-				.indent()
-				.append("result = parse_" + startSymbol + "();\n")
-				.deindent()
-				.append("} catch (final ArrayIndexOutOfBoundsException e) {\n")
-				.indent()
-				.append("return null;\n")
+				.append("throw syntaxError(result != null);\n")
 				.deindent()
 				.append("}\n");
-		if (atLeastOneSequence) {
-			sb.append("return (pos == v.length && stack.isEmpty()) ? result : null;\n");
-		} else {
-			sb.append("return pos == v.length ? result : null;\n");
-		}
-		sb.deindent().append("}\n");
+
+		// The error is reported at the furthest token reached, listing what was expected there
+		sb.append("private ParsingException syntaxError(final boolean canEnd) {\n")
+				.indent()
+				.append("final int errorPos = Math.max(farthestPos, pos);\n")
+				.append("final List<String> expected = new ArrayList<>();\n")
+				.append("if (errorPos == farthestPos) {\n")
+				.indent()
+				.append("for (final TokenType t : expectedAtFarthestPos) {\n")
+				.indent()
+				.append("expected.add(t.description());\n")
+				.deindent()
+				.append("}\n")
+				.deindent()
+				.append("}\n")
+				.append("if (canEnd && errorPos == pos) {\n")
+				.indent()
+				.append("expected.add(\"end of input\");\n")
+				.deindent()
+				.append("}\n")
+				.append("final StringBuilder sb = new StringBuilder();\n")
+				.append("final int line;\n")
+				.append("final int column;\n")
+				.append("if (errorPos < v.length) {\n")
+				.indent()
+				.append("sb.append(\"Unexpected '\").append(v[errorPos].content()).append('\\'');\n")
+				.append("line = v[errorPos].line();\n")
+				.append("column = v[errorPos].column();\n")
+				.deindent()
+				.append("} else {\n")
+				.indent()
+				.append("sb.append(\"Unexpected end of input\");\n")
+				.append("line = endLine;\n")
+				.append("column = endColumn;\n")
+				.deindent()
+				.append("}\n")
+				.append("sb.append(\" at \").append(line).append(':').append(column);\n")
+				.append("if (expected.size() == 1) {\n")
+				.indent()
+				.append("sb.append(\", expected \").append(expected.getFirst());\n")
+				.deindent()
+				.append("} else if (!expected.isEmpty()) {\n")
+				.indent()
+				.append("sb.append(\", expected one of: \").append(String.join(\", \", expected));\n")
+				.deindent()
+				.append("}\n")
+				.append("sb.append('.');\n")
+				.append("return new ParsingException(sb.toString(), line, column);\n")
+				.deindent()
+				.append("}\n");
 
 		if (generateMainMethod) {
 			sb.append(
@@ -243,6 +319,12 @@ public final class Generator {
 					.append("} catch (final IOException e) {\n")
 					.indent()
 					.append("throw new RuntimeException(e);\n")
+					.deindent()
+					.append("} catch (final ParsingException e) {\n")
+					.indent()
+					.append("System.err.println(e.getMessage());\n")
+					.append("System.exit(1);\n")
+					.append("return;\n")
 					.deindent()
 					.append("}\n")
 					.append("printNode(result, \"\", \"\");\n")

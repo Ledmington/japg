@@ -18,7 +18,7 @@
 package com.ledmington.ebnf;
 
 /** A set of tokens represented by single characters. */
-public enum Symbols implements Token {
+public enum SymbolType {
 
 	/** The semicolon symbol (U+003B). */
 	SEMICOLON(';'),
@@ -64,7 +64,7 @@ public enum Symbols implements Token {
 
 	private final char character;
 
-	Symbols(final char ch) {
+	SymbolType(final char ch) {
 		this.character = ch;
 	}
 

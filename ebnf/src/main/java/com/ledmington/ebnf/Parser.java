@@ -17,8 +17,6 @@
  */
 package com.ledmington.ebnf;
 
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +37,8 @@ public final class Parser {
 	 */
 	public static Grammar parse(final String input) {
 		try {
-			final String stripped = removeComments(input);
+			final TextIterator it = new StringTextIterator(input);
+			final TextIterator stripped = skipComments(it);
 			final List<Token> tokens = tokenize(stripped);
 			return parse(tokens);
 		} catch (final IndexOutOfBoundsException ioobe) {
@@ -47,166 +46,125 @@ public final class Parser {
 		}
 	}
 
-	@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-	private static String removeComments(final String input) {
-		final StringBuilder sb = new StringBuilder(input.length());
-		final int n = input.length();
-
-		boolean inBlockComment = false;
-		boolean inLineComment = false;
-		boolean inString = false;
-
-		for (int i = 0; i < n; i++) {
-			final char c = input.charAt(i);
-
-			if (inBlockComment) {
-				// End of block comment
-				if (i + 1 < n && c == '*' && input.charAt(i + 1) == '/') {
-					inBlockComment = false;
-					i++;
-				}
-			} else if (inLineComment) {
-				// End of line comment
-				if (c == '\n') {
-					inLineComment = false;
-					sb.append(c);
-				}
-			} else if (inString) {
-				sb.append(c);
-				if (c == '\\' && i + 1 < n) {
-					i++;
-					sb.append(input.charAt(i));
-				} else if (c == '"') {
-					inString = false;
-				}
-			} else {
-				// Not inside a string or comment
-				if (i + 1 < n && c == '/' && input.charAt(i + 1) == '*') {
-					inBlockComment = true;
-					i++;
-				} else if (i + 1 < n && c == '/' && input.charAt(i + 1) == '/') {
-					inLineComment = true;
-					i++;
-				} else {
-					sb.append(c);
-					if (c == '"') {
-						inString = true;
-					}
-				}
-			}
-		}
-
-		if (inBlockComment) {
-			throw new ParsingException("Unterminated block comment.");
-		}
-		if (inString) {
-			throw new ParsingException("Unterminated string literal.");
-		}
-
-		return sb.toString();
+	private static TextIterator skipComments(final TextIterator it) {
+		return new CommentSkippingTextIterator(it);
 	}
 
-	private static List<Token> tokenize(final String input) {
+	private static List<Token> tokenize(final TextIterator it) {
 		final List<Token> tokens = new ArrayList<>();
-		final StringCharacterIterator it = new StringCharacterIterator(input);
-		while (it.current() != CharacterIterator.DONE) {
+		while (it.hasNext()) {
 			final char ch = it.current();
-			if (ch == Symbols.WHITESPACE.getCharacter()
-					|| ch == Symbols.TAB.getCharacter()
-					|| ch == Symbols.NEWLINE.getCharacter()) {
+			if (ch == SymbolType.WHITESPACE.getCharacter()
+					|| ch == SymbolType.TAB.getCharacter()
+					|| ch == SymbolType.NEWLINE.getCharacter()) {
 				skipWhitespaces(it);
-			} else if (Character.isAlphabetic(ch) || ch == Symbols.UNDERSCORE.getCharacter()) {
+			} else if (Character.isAlphabetic(ch) || ch == SymbolType.UNDERSCORE.getCharacter()) {
 				tokens.add(readWord(it));
-			} else if (ch == Symbols.EQUAL_SIGN.getCharacter()) {
-				tokens.add(Symbols.EQUAL_SIGN);
-				it.next();
-			} else if (ch == Symbols.SEMICOLON.getCharacter()) {
-				tokens.add(Symbols.SEMICOLON);
-				it.next();
-			} else if (ch == Symbols.VERTICAL_LINE.getCharacter()) {
-				tokens.add(Symbols.VERTICAL_LINE);
-				it.next();
-			} else if (ch == Symbols.LEFT_PARENTHESIS.getCharacter()) {
-				tokens.add(Symbols.LEFT_PARENTHESIS);
-				it.next();
-			} else if (ch == Symbols.RIGHT_PARENTHESIS.getCharacter()) {
-				tokens.add(Symbols.RIGHT_PARENTHESIS);
-				it.next();
-			} else if (ch == Symbols.PLUS.getCharacter()) {
-				tokens.add(Symbols.PLUS);
-				it.next();
-			} else if (ch == Symbols.QUESTION_MARK.getCharacter()) {
-				tokens.add(Symbols.QUESTION_MARK);
-				it.next();
-			} else if (ch == Symbols.DOT.getCharacter()) {
-				tokens.add(Symbols.DOT);
-				it.next();
-			} else if (ch == Symbols.ASTERISK.getCharacter()) {
-				tokens.add(Symbols.ASTERISK);
-				it.next();
-			} else if (ch == Symbols.DOUBLE_QUOTES.getCharacter()) {
+			} else if (ch == SymbolType.EQUAL_SIGN.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.EQUAL_SIGN, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.SEMICOLON.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.SEMICOLON, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.VERTICAL_LINE.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.VERTICAL_LINE, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.LEFT_PARENTHESIS.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.LEFT_PARENTHESIS, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.RIGHT_PARENTHESIS.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.RIGHT_PARENTHESIS, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.PLUS.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.PLUS, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.QUESTION_MARK.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.QUESTION_MARK, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.DOT.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.DOT, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.ASTERISK.getCharacter()) {
+				tokens.add(new Symbol(SymbolType.ASTERISK, it.getLine(), it.getColumn()));
+				it.move();
+			} else if (ch == SymbolType.DOUBLE_QUOTES.getCharacter()) {
 				tokens.add(readStringLiteral(it));
 			} else {
-				throw new ParsingException(String.format("Unknown character: '%c' (U+%04X).", ch, (int) ch));
+				throw new ParsingException(String.format(
+						"Unknown character '%c' (U+%04X) at %d:%d.", ch, (int) ch, it.getLine(), it.getColumn()));
 			}
 		}
 		return tokens;
 	}
 
 	@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
-	private static StringLiteral readStringLiteral(final StringCharacterIterator it) {
-		if (it.current() != Symbols.DOUBLE_QUOTES.getCharacter()) {
-			throw new AssertionError("Expected string literal to start with '\"'.");
+	private static StringLiteral readStringLiteral(final TextIterator it) {
+		if (it.current() != SymbolType.DOUBLE_QUOTES.getCharacter()) {
+			throw new AssertionError(String.format(
+					"Expected string literal to start with '%c' but it was '%c' at %d:%d.",
+					SymbolType.DOUBLE_QUOTES.getCharacter(), it.current(), it.getLine(), it.getColumn()));
 		}
-		it.next();
+
+		final int startLine = it.getLine();
+		final int startColumn = it.getColumn();
+
+		it.move();
 		final StringBuilder sb = new StringBuilder();
-		while (it.current() != CharacterIterator.DONE && it.current() != Symbols.DOUBLE_QUOTES.getCharacter()) {
-			if (it.current() == Symbols.NEWLINE.getCharacter()) {
+		while (it.hasNext() && it.current() != SymbolType.DOUBLE_QUOTES.getCharacter()) {
+			if (it.current() == SymbolType.NEWLINE.getCharacter()) {
 				// string literals must be on the same line
-				throw new ParsingException("Unexpected newline while reading string literal.");
+				throw new ParsingException(String.format(
+						"Unexpected newline while reading string literal at %d:%d.", it.getLine(), it.getColumn()));
 			}
-			final int idx = it.getIndex();
 			if (it.current() == '\\') {
-				it.next();
-				if (it.current() == Symbols.DOUBLE_QUOTES.getCharacter()) {
-					sb.append(Symbols.DOUBLE_QUOTES.getCharacter());
-				} else if (it.current() == 'n') {
+				final char next = it.peekNext();
+				if (next == SymbolType.DOUBLE_QUOTES.getCharacter()) {
+					sb.append(SymbolType.DOUBLE_QUOTES.getCharacter());
+					it.move();
+				} else if (next == 'n') {
 					sb.append('\n');
-				} else if (it.current() == 't') {
+					it.move();
+				} else if (next == 't') {
 					sb.append('\t');
-				} else if (it.current() == '\\') {
+					it.move();
+				} else if (next == '\\') {
 					sb.append('\\');
-				} else {
-					it.setIndex(idx);
+					it.move();
 				}
+
+				// Unknown escape sequences: the backslash is dropped and the next character is read normally
+
 			} else {
 				sb.append(it.current());
 			}
-			it.next();
+			it.move();
 		}
-		if (it.current() == CharacterIterator.DONE) {
-			throw new ParsingException(String.format("Unclosed double quotes in string literal '%s'.", sb));
+		if (!it.hasNext()) {
+			throw new ParsingException(String.format(
+					"Unclosed double quotes in string literal '%s' started at %d:%d.", sb, startLine, startColumn));
 		}
-		it.next();
-		return new StringLiteral(sb.toString());
+		it.move();
+		return new StringLiteral(sb.toString(), startLine, startColumn);
 	}
 
-	private static Word readWord(final StringCharacterIterator it) {
+	private static Word readWord(final TextIterator it) {
+		final int startLine = it.getLine();
+		final int startColumn = it.getColumn();
 		final StringBuilder sb = new StringBuilder();
 		do {
 			sb.append(it.current());
-			it.next();
-		} while (it.current() != CharacterIterator.DONE
-				&& (Character.isAlphabetic(it.current()) || it.current() == Symbols.UNDERSCORE.getCharacter()));
-		return new Word(sb.toString());
+			it.move();
+		} while (it.hasNext()
+				&& (Character.isAlphabetic(it.current()) || it.current() == SymbolType.UNDERSCORE.getCharacter()));
+		return new Word(sb.toString(), startLine, startColumn);
 	}
 
-	private static void skipWhitespaces(final StringCharacterIterator it) {
-		while (it.current() != CharacterIterator.DONE
-				&& (it.current() == Symbols.WHITESPACE.getCharacter()
-						|| it.current() == Symbols.TAB.getCharacter()
-						|| it.current() == Symbols.NEWLINE.getCharacter())) {
-			it.next();
+	private static void skipWhitespaces(final TextIterator it) {
+		while (it.hasNext()
+				&& (it.current() == SymbolType.WHITESPACE.getCharacter()
+						|| it.current() == SymbolType.TAB.getCharacter()
+						|| it.current() == SymbolType.NEWLINE.getCharacter())) {
+			it.move();
 		}
 	}
 
@@ -259,11 +217,15 @@ public final class Parser {
 		return g;
 	}
 
+	private static boolean isSymbol(final Object obj, final SymbolType type) {
+		return obj instanceof Symbol(final SymbolType t, final int line, final int column) && t == type;
+	}
+
 	private static Optional<Pair<Integer, Integer>> findBrackets(final List<Object> v) {
 		final int n = v.size();
 		int leftBracketPosition = -1;
 		for (int i = 0; i < n; i++) {
-			if (v.get(i).equals(Symbols.LEFT_PARENTHESIS)) {
+			if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)) {
 				leftBracketPosition = i;
 				break;
 			}
@@ -272,9 +234,9 @@ public final class Parser {
 			return Optional.empty();
 		}
 		for (int i = leftBracketPosition + 1; i < n; i++) {
-			if (v.get(i).equals(Symbols.LEFT_PARENTHESIS)) {
+			if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)) {
 				leftBracketPosition = i;
-			} else if (v.get(i).equals(Symbols.RIGHT_PARENTHESIS)) {
+			} else if (isSymbol(v.get(i), SymbolType.RIGHT_PARENTHESIS)) {
 				return Optional.of(Pair.of(leftBracketPosition, i));
 			}
 		}
@@ -312,7 +274,8 @@ public final class Parser {
 
 			if (v.size() == initialSize) {
 				throw new ParsingException(String.format(
-						"Unknown parsing state:%n%s",
+						"Unknown parsing state after %d passes:%n%s",
+						pass,
 						IntStream.range(0, v.size())
 								.mapToObj(i -> String.format(
 										" %3d : %n%s",
@@ -327,27 +290,29 @@ public final class Parser {
 
 	private static void convertStringLiteralsToTerminals(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i) instanceof StringLiteral(final String literal)) {
-				v.set(i, new Terminal(literal));
+			if (v.get(i) instanceof final StringLiteral s) {
+				v.set(i, new Terminal(s.literal(), false, s.getLine(), s.getStartColumn(), s.getEndColumn()));
 			}
 		}
 	}
 
 	private static void convertWordsToNonTerminals(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i) instanceof Word(final String content)) {
-				v.set(i, new NonTerminal(content));
+			if (v.get(i) instanceof final Word w) {
+				v.set(i, new NonTerminal(w.word(), w.getLine(), w.getStartColumn(), w.getEndColumn()));
 			}
 		}
 	}
 
 	private static void convertDotsToAlternations(final List<Object> v) {
 		for (int i = 0; i < v.size(); i++) {
-			if (v.get(i).equals(Symbols.DOT)) {
+			if (v.get(i) instanceof final Symbol dot && dot.type() == SymbolType.DOT) {
+				// Every character matched by the dot gets the position of the dot itself
 				v.set(
 						i,
 						new Or(IntStream.range(32, 127)
-								.mapToObj(x -> (Expression) new Terminal("" + (char) x))
+								.mapToObj(x -> (Expression) new Terminal(
+										"" + (char) x, false, dot.getLine(), dot.getStartColumn(), dot.getEndColumn()))
 								.toList()));
 			}
 		}
@@ -382,9 +347,9 @@ public final class Parser {
 		if (i + 2 >= v.size()) {
 			return false;
 		}
-		if (v.get(i).equals(Symbols.LEFT_PARENTHESIS)
+		if (isSymbol(v.get(i), SymbolType.LEFT_PARENTHESIS)
 				&& v.get(i + 1) instanceof final Expression exp
-				&& v.get(i + 2).equals(Symbols.RIGHT_PARENTHESIS)) {
+				&& isSymbol(v.get(i + 2), SymbolType.RIGHT_PARENTHESIS)) {
 			v.subList(i, i + 3).clear();
 			v.add(i, exp);
 			return true;
@@ -397,9 +362,9 @@ public final class Parser {
 			return false;
 		}
 		if (v.get(i) instanceof final NonTerminal start
-				&& v.get(i + 1).equals(Symbols.EQUAL_SIGN)
+				&& isSymbol(v.get(i + 1), SymbolType.EQUAL_SIGN)
 				&& v.get(i + 2) instanceof final Expression exp
-				&& v.get(i + 3).equals(Symbols.SEMICOLON)) {
+				&& isSymbol(v.get(i + 3), SymbolType.SEMICOLON)) {
 			v.subList(i, i + 4).clear();
 			v.add(i, new Production(start, exp));
 			return true;
@@ -442,11 +407,12 @@ public final class Parser {
 		int count = 0;
 		int j = i + 1;
 		for (; j < v.size() - 1; j++) {
-			if (v.get(j).equals(Symbols.VERTICAL_LINE) && v.get(j + 1) instanceof Or(final List<Expression> exp)) {
+			if (isSymbol(v.get(j), SymbolType.VERTICAL_LINE)
+					&& v.get(j + 1) instanceof Or(final List<Expression> exp)) {
 				expressions.addAll(exp);
 				count++;
 				j++;
-			} else if (v.get(j).equals(Symbols.VERTICAL_LINE) && v.get(j + 1) instanceof final Expression exp) {
+			} else if (isSymbol(v.get(j), SymbolType.VERTICAL_LINE) && v.get(j + 1) instanceof final Expression exp) {
 				expressions.add(exp);
 				count++;
 				j++;
@@ -466,7 +432,7 @@ public final class Parser {
 	private static boolean asterisk(final List<Object> v, final int i) {
 		if (i + 1 < v.size()
 				&& v.get(i) instanceof final Expression exp
-				&& v.get(i + 1).equals(Symbols.ASTERISK)) {
+				&& isSymbol(v.get(i + 1), SymbolType.ASTERISK)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new ZeroOrMore(exp));
 			return true;
@@ -478,7 +444,7 @@ public final class Parser {
 		if (i + 1 >= v.size()) {
 			return false;
 		}
-		if (v.get(i) instanceof final Expression exp && v.get(i + 1).equals(Symbols.PLUS)) {
+		if (v.get(i) instanceof final Expression exp && isSymbol(v.get(i + 1), SymbolType.PLUS)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new OneOrMore(exp));
 			return true;
@@ -490,7 +456,7 @@ public final class Parser {
 		if (i + 1 >= v.size()) {
 			return false;
 		}
-		if (v.get(i) instanceof final Expression exp && v.get(i + 1).equals(Symbols.QUESTION_MARK)) {
+		if (v.get(i) instanceof final Expression exp && isSymbol(v.get(i + 1), SymbolType.QUESTION_MARK)) {
 			v.subList(i, i + 2).clear();
 			v.add(i, new ZeroOrOne(exp));
 			return true;

@@ -36,6 +36,7 @@ import com.ledmington.automata.NFA;
 import com.ledmington.automata.NFAToDFA;
 import com.ledmington.automata.State;
 import com.ledmington.ebnf.Production;
+import com.ledmington.ebnf.Terminal;
 import com.ledmington.ebnf.Utils;
 
 /** Helper class to generate java code for a DFA parsing a given list of productions. */
@@ -90,13 +91,33 @@ public final class DFASerializer {
 		final Map<String, Integer> tokenTypeToIndex = IntStream.range(0, sortedTokenTypes.size())
 				.boxed()
 				.collect(Collectors.toMap(sortedTokenTypes::get, i -> i));
+		// How each token type is shown in error messages: the literal itself if the token is a plain literal
+		final Map<String, String> tokenDescriptions = lexerProductions.stream()
+				.collect(Collectors.toMap(
+						p -> p.start().name(),
+						p -> p.result() instanceof final Terminal t
+								? "'" + Utils.getEscapedString(t.getLiteral()) + "'"
+								: p.start().name()));
 		sb.append("public enum TokenType {\n")
 				.indent()
-				.append(String.join(",\n", sortedTokenTypes))
-				.append('\n')
+				.append(sortedTokenTypes.stream()
+						.map(name -> name + "(\"" + Utils.getEscapedString(tokenDescriptions.get(name)) + "\")")
+						.collect(Collectors.joining(",\n")))
+				.append(";\n")
+				.append("private final String description;\n")
+				.append("TokenType(final String description) {\n")
+				.indent()
+				.append("this.description = description;\n")
 				.deindent()
 				.append("}\n")
-				.append("public record Token(TokenType type, String content) {\n")
+				.append("public String description() {\n")
+				.indent()
+				.append("return description;\n")
+				.deindent()
+				.append("}\n")
+				.deindent()
+				.append("}\n")
+				.append("public record Token(TokenType type, String content, int line, int column) {\n")
 				.indent()
 				.append("public Token {\n")
 				.indent()
@@ -154,7 +175,9 @@ public final class DFASerializer {
 				.append("private final TokenType[] tokensToMatch;\n")
 				.append("private final int[] offsets;\n")
 				.append("private final char[] symbols;\n")
-				.append("private final int[] destinations;\n");
+				.append("private final int[] destinations;\n")
+				.append("private int endLine = 1;\n")
+				.append("private int endColumn = 1;\n");
 
 		final int totalBytes = 4
 				+ 4
@@ -296,10 +319,31 @@ public final class DFASerializer {
 				.append("return -1;\n")
 				.deindent()
 				.append("}\n")
+				.append("public int getEndLine() {\n")
+				.indent()
+				.append("return endLine;\n")
+				.deindent()
+				.append("}\n")
+				.append("public int getEndColumn() {\n")
+				.indent()
+				.append("return endColumn;\n")
+				.deindent()
+				.append("}\n")
+				.append(
+						"private static ParsingException unexpectedCharacter(final char ch, final int line, final int column) {\n")
+				.indent()
+				.append(
+						"return new ParsingException(String.format(\"Unexpected character '%c' (U+%04X) at %d:%d.\", ch, (int) ch, line, column), line, column);\n")
+				.deindent()
+				.append("}\n")
 				.append("public List<Token> tokenize(final String input) {\n")
 				.indent()
 				.append("final char[] v = input.toCharArray();\n")
 				.append("int pos = 0;\n")
+				.append("int line = 1;\n")
+				.append("int column = 1;\n")
+				.append("int tokenStartLine = 1;\n")
+				.append("int tokenStartColumn = 1;\n")
 				.append("int lastTokenMatchStart = 0;\n")
 				.append("int lastTokenMatchEnd = 0;\n")
 				.append("final List<Token> tokens = new ArrayList<>();\n")
@@ -316,6 +360,16 @@ public final class DFASerializer {
 				.append("if (nextState != -1) {\n")
 				.indent()
 				.append("currentState = nextState;\n")
+				.append("if (ch == '\\n') {\n")
+				.indent()
+				.append("line++;\n")
+				.append("column = 1;\n")
+				.deindent()
+				.append("} else {\n")
+				.indent()
+				.append("column++;\n")
+				.deindent()
+				.append("}\n")
 				.append("pos++;\n")
 				.deindent()
 				.append("} else {\n")
@@ -325,23 +379,25 @@ public final class DFASerializer {
 				.append("final int length = lastTokenMatchEnd - lastTokenMatchStart;\n")
 				.append("if (length == 0) {\n")
 				.indent()
-				.append(
-						"throw new IllegalArgumentException(String.format(\"No token emitted for empty match at index %,d.\", pos));\n")
+				.append("throw unexpectedCharacter(ch, line, column);\n")
 				.deindent()
 				.append("}\n")
 				.append("if (!isSkippable[currentState]) {\n")
 				.indent()
 				.append("final String match = String.copyValueOf(v, lastTokenMatchStart, length);\n")
-				.append("tokens.add(new Token(tokensToMatch[currentState], match));\n")
+				.append(
+						"tokens.add(new Token(tokensToMatch[currentState], match, tokenStartLine, tokenStartColumn));\n")
 				.deindent()
 				.append("}\n")
 				.append("lastTokenMatchStart = pos;\n")
+				.append("tokenStartLine = line;\n")
+				.append("tokenStartColumn = column;\n")
 				.append("lastTokenMatchEnd = -1;\n")
 				.append("currentState = 0;\n")
 				.deindent()
 				.append("} else {\n")
 				.indent()
-				.append("throw new IllegalArgumentException(String.format(\"Lexical error at index %,d.\", pos));\n")
+				.append("throw unexpectedCharacter(ch, line, column);\n")
 				.deindent()
 				.append("}\n")
 				.deindent()
@@ -357,9 +413,18 @@ public final class DFASerializer {
 				.append("if (isAccepting[currentState] && length > 0 && !isSkippable[currentState]) {\n")
 				.indent()
 				.append("final String match = String.copyValueOf(v, lastTokenMatchStart, length);\n")
-				.append("tokens.add(new Token(tokensToMatch[currentState], match));\n")
+				.append(
+						"tokens.add(new Token(tokensToMatch[currentState], match, tokenStartLine, tokenStartColumn));\n")
+				.deindent()
+				.append("} else if (!isAccepting[currentState] && pos > lastTokenMatchStart) {\n")
+				.indent()
+				.append("// The input ended in the middle of a token\n")
+				.append(
+						"throw new ParsingException(String.format(\"Unexpected end of input at %d:%d.\", line, column), line, column);\n")
 				.deindent()
 				.append("}\n")
+				.append("this.endLine = line;\n")
+				.append("this.endColumn = column;\n")
 				.append("return tokens;\n")
 				.deindent()
 				.append("}\n")

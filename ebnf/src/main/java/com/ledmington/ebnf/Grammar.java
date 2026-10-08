@@ -123,8 +123,8 @@ public final class Grammar {
 		return switch (e) {
 			case Terminal t -> {
 				final Optional<Production> replacement = lexerProductions.stream()
-						.filter(p -> p.result() instanceof Terminal(final String literal, final boolean ignored)
-								&& t.literal().equals(literal))
+						.filter(p -> p.result() instanceof final Terminal other
+								&& t.getLiteral().equals(other.getLiteral()))
 						.findFirst();
 				// Avoid generating fake non-terminal expressions for terminals already present in other productions
 				if (replacement.isPresent()) {

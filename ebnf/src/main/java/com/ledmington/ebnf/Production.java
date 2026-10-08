@@ -70,4 +70,24 @@ public record Production(NonTerminal start, Expression result) implements Node {
 	public boolean isSkippable() {
 		return isSkippable(this.start.name());
 	}
+
+	@Override
+	public int getStartLine() {
+		return start.getStartLine();
+	}
+
+	@Override
+	public int getEndLine() {
+		return result.getEndLine();
+	}
+
+	@Override
+	public int getStartColumn() {
+		return start.getStartColumn();
+	}
+
+	@Override
+	public int getEndColumn() {
+		return result.getEndColumn();
+	}
 }

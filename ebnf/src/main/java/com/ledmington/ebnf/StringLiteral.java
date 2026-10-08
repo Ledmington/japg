@@ -20,6 +20,23 @@ package com.ledmington.ebnf;
 /**
  * A sequence of any characters delimited by double quotes.
  *
- * @param literal The content of this literal.c
+ * @param literal The content of this literal.
+ * @param line The line where this token appears.
+ * @param startColumn The column where this token starts (i.e. where the first double quote is placed).
  */
-public record StringLiteral(String literal) implements Token {}
+public record StringLiteral(String literal, int line, int startColumn) implements Token {
+	@Override
+	public int getLine() {
+		return line;
+	}
+
+	@Override
+	public int getStartColumn() {
+		return startColumn;
+	}
+
+	@Override
+	public int getEndColumn() {
+		return startColumn + literal.length() + 1; // +1 for the closing quote
+	}
+}
